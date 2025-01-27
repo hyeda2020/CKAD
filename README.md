@@ -20,7 +20,10 @@ https://www.udemy.com/course/certified-kubernetes-application-developer/
   파드 내 컨테이너 그룹은 항상 함께 배치되고, 함께 스케줄되며, 네트워크와 스토리지를 서로 공유함.  
 
   사용량 증가로 인해 앱에 부하가 발생한다면 해당 노드에 새로운 파드를 추가로 생성하여 부하를 분산시키는 방식으로 앱의 규모를 늘림.  
-  이후 계속된 사용량 증가로 인해 노드 내의 앱 규모가 확장되어 리소스 자원(용량, CPU 등)이 부족해지면 새로운 노드에 파드를 추가로 배포.
+  이후 계속된 사용량 증가로 인해 노드 내의 앱 규모가 확장되어 리소스 자원(용량, CPU 등)이 부족해지면 새로운 노드에 파드를 추가로 배포.  
+  - Pod 생성 방법 예시(kubectl 명령어)  
+  `kubectl run <pod-name> --image=<image-name>`
+
 
 ※ yml in Kubernetes : .yml 파일은 쿠버네티스 내에서 Pod, ReplicaSet, Deployment, Service 등의 개체 생성을 위한 일종의 '명세'로서 기능.  
 ```
@@ -89,3 +92,20 @@ spec:
       - name: nginx-container
         image: nginx
 ```
+
+- Namespace : 단일 클러스터 내에서 리소스 그룹을 서로 나누고 분리시키는 것으로,  
+  클러스터 자원을 `ResourceQuota`를 통해 여러 사용자 사이에서 나누는 방법.  
+  이때, 리소스의 이름은 네임스페이스 내에서 유일해야 하며, 전체 네임스페이스를 통틀어서 유일할 필요는 없음.  
+  이러한 리소스 범위 지정은 네임스페이스 기반 오브젝트(Deployment, Service 등)에만 적용되며,  
+  Node, Persistent Volume 등의 클러스터 단위 오브젝트에는 적용 불가.  
+  (처음엔 `default` 네임스페이스가 기본적으로 세팅됨.)
+
+  - 현재 요청에 네임스페이스 설정 방법 예시  
+    ```
+    kubectl run nginx --image=nginx --namespace=<namespace-name>
+    kubectl get pods --namespace=<namespace-name>
+    ```
+  - 네임스페이스 컨텍스트 지정 방법 예시
+    ```
+    kubectl config set-context --current --namespace=<namespace-name>
+    ```
