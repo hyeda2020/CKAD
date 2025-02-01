@@ -93,8 +93,7 @@ spec:
         image: nginx
 ```
 
-- Namespace : 단일 클러스터 내에서 리소스 그룹을 서로 나누고 분리시키는 것으로,  
-  클러스터 자원을 `ResourceQuota`를 통해 여러 사용자 사이에서 나누는 방법.  
+- Namespace : 단일 클러스터 내에서 리소스 그룹을 서로 나누고 분리시키는 것으로, 클러스터 자원을 여러 사용자 사이에서 나누는 방법.  
   이때, 리소스의 이름은 네임스페이스 내에서 유일해야 하며, 전체 네임스페이스를 통틀어서 유일할 필요는 없음.  
   이러한 리소스 범위 지정은 네임스페이스 기반 오브젝트(Deployment, Service 등)에만 적용되며,  
   Node, Persistent Volume 등의 클러스터 단위 오브젝트에는 적용 불가.  
@@ -179,4 +178,58 @@ spec:
   envFrom:
     - secretRef: # Secret 적용
       name: mysecret
+  ```  
+- Service Account : 파드의 일부 컨테이너에서 실행되는 애플리케이션 프로세스(젠킨스, 프로메테우스 등)이 클러스터의 API 서버에 인증하기 위해 사용.  
+  - Service Account 생성 예시  
+   `kubectl create serviceaccount <sa-name>`  
+  쿠버네티스는 파드에 Service Account를 명시하지 않을 경우 기본적으로 `default` Service Account와 그 토큰이 볼륨으로 마운트 됨.  
+  쿠버네티스 v1.32을 포함한 최신 버전에서는  API 자격 증명들은 TokenRequest API를 사용하여 직접 얻거나 Projected Volume을 사용하여 파드에 마운트할 수 있음.  
+  (단, 이 방법으로 취득한 토큰은 시간 제한이 있으며, 마운트 되었던 파드가 삭제되는 경우 자동으로 만료됨.)   
+  만약 만료되지 않는 토큰이 필요한 경우, 다음과 같이 해당 서비스어카운트를 참조하는 어노테이션을 갖는  
+ `kubernetes.io/service-account-token` 타입의 시크릿을 생성.  
+  ```
+  apiVersion: v1
+  kind: Secret
+  type: kubernetes.io/service-account-token
+  metadata:
+    name: mysecretname
+    annotations:
+      kubernetes.io/service-account.name: myserviceaccount # 서비스 계정과 연결
+  ```  
+- Resource Requirements : 파드가 사용하는 노드의 리소스 양을 제약 및 관리.
+  - Pod별 리소스 관리  
+  ```
+  # pod-definition.yml
+  apiVersion: v1
+  kind: Pod
+  metadata:
+    name: my-pod
+    labels:
+      app: myapp
+  spec:
+    containers  # 리스트 형식
+    - name: nginx-container
+      image: nginx
+      resources:
+        requests:
+          memory: "1Gi"
+          cpu: 1
+        limits:
+          memory: "2Gi"
+          cpu: 1
+  ```  
+  - `Resource Quota`를 사용한 네임스페이스 단위 리소스 관리  
+  ```
+  # resource-quota.yml
+  apiVersion: v1
+  kind: ResourceQuota
+  metadata:
+    name: my-resource-quota
+  spec:
+    hard:
+      requests.cpu: 1
+      requests.memory: 1Gi
+      limits.cpu: 2
+      limits.memory: 2Gi
+      requests.nvidia.com/gpu: 4
   ```
