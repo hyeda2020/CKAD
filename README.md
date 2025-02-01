@@ -4,7 +4,7 @@
 https://kubernetes.io/ko/  
 https://www.udemy.com/course/certified-kubernetes-application-developer/  
 
-# Core Concepts
+# 1. Core Concepts
 ![image](https://github.com/user-attachments/assets/8788bc3b-d7ec-42bc-b03f-6c8cf2dcabc6)
 - Node : 클러스터 내 가상의 머신으로, 각 노드는 컨트롤 플레인에 의해 관리되고 kublet, kube-proxy와 같은 파드를 실행하는 데 필요한 서비스를 포함함.  
   - Control Plane Component : 클러스터에 관한 전반적인 결정(스케줄링 등)을 수행하고 클러스터 이벤트를 감지 및 반응  
@@ -109,3 +109,74 @@ spec:
     ```
     kubectl config set-context --current --namespace=<namespace-name>
     ```
+# 2. Configuration
+- ConfigMap : 키-값 쌍으로 데이터를 저장하는데 사용하는 API 오브젝트로, 파드는 볼륨에서 환경 변수, 커맨드-라인 인수 또는 구성 파일로 컨피그맵을 사용할 수 있음.
+  - ConfigMap 생성 예시(kubectl 명령어)
+  ```
+  kubectl create configmap <config-name> --from-literal=<key>=<value> # key-value 값 직접 지정하여 생성  
+  kubectl create configmap <config-name> --from-file=<path-to-file>   # 파일을 직접 지정하여 생성  
+  kubectl create configmap <config-name> --from-file=<directory>/     # 디렉토리를 직접 지정하여 생성(디렉토리 내 파일은 key, 파일 내용은 value가 됨)  
+  ```
+    
+  - yml 파일을 활용한 ConfigMap 생성 및 적용 예시
+  ```
+  # config-map.yml 파일 정의
+  apiVersion: v1
+  kind: ConfigMap
+  metadata:
+    name: app-config
+  data:
+    player_initial_lives: "3"
+    ui_properties_file_name: "user-interface.properties"
+  ```  
+  ```  
+  # pod-definition.yml
+  apiVersion: v1
+  kind: Pod
+  metadata:
+    name: my-pod
+    labels:
+      app: myapp
+  spec:
+    containers
+    - name: nginx-container
+      image: nginx
+  envFrom:
+    - configMapRef: # ConfigMap 적용 
+      name: app-config
+  ```
+
+- Secret : 컨테이너에서 사용하는 password, auth token, ssh key와 같은 중요 민감 정보들을 저장하고 base64로 인코딩해서 관리.
+  민감하지 않은 일반 설정 데이터는 ConfigMap을 사용하고, 민감한 정보는 Scret 사용.  
+  - Secret 생성 예시(kubectl 명령어)  
+  ```
+  kubectl create secret generic <secret-name> --from-literal=<key>=<value>
+  kubectl create secret generic <secret-name> --from-file=<path-to-file>
+  ```
+  - yml 파일을 활용한 Secret 생성 및 적용 예시
+  ```
+  # secret.yml
+  apiVersion: v1
+  kind: Secret
+  metadata:
+    name: mysecret
+  data:  # 이 값은 Secret 생성 후 base64로 인코딩되어 관리됨
+    USER_NAME: root
+    PASSWORD: pswrd
+  ```  
+  ```
+  # pod-definition.yml
+  apiVersion: v1
+  kind: Pod
+  metadata:
+    name: my-pod
+    labels:
+      app: myapp
+  spec:
+    containers
+    - name: nginx-container
+      image: nginx
+  envFrom:
+    - secretRef: # Secret 적용
+      name: mysecret
+  ```
