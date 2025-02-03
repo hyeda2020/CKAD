@@ -233,3 +233,37 @@ spec:
       limits.memory: 2Gi
       requests.nvidia.com/gpu: 4
   ```
+
+- Taints & Tolerations : 워커 노드에 Taint가 설정된 경우, 동일 값의 Toleration이 있는 파드만 해당 워커 노드에 배치 가능.  
+  Toleration이 있는 파드는 동일한 Taint가 있는 노드를 포함하여 모든 노드에 배치 가능.  
+  가령, `kubectl create deployment testdep --image=nginx --replicas=5` 명령어를 통해 파드를 생성한 경우,  
+  오직 워커노드에만 배치되고 절대 마스터 노드에는 배치되지 않는데,  
+  그 이유는 마스터 노드에는 `node-role.kubernetes.io/master:NoSchedule` 라는 Taint가 설정되어 있기 때문.  
+  - Taints 생성 예시  
+  `kubectl taint nodes node1 key1=value1:NoSchedule`  
+  - Taints 제거 예시  
+  `kubectl taint nodes node1 key1=value1:NoSchedule-`
+  - Tolerations 적용 예시
+  ```
+  # pod-definition.yml
+  apiVersion: v1 
+  kind: Pod
+  metadata:
+    name: my-pod
+    labels:
+      app: myapp
+  spec:
+    containers 
+    - name: nginx-container
+      image: nginx
+    tolerations: # tolerations 적용
+    - key: "key1"
+      operator: "Equal" # Taint가 '일치'하는 노드에 배치 가능
+      value: "value1"
+      effect: "NoSchedule"
+  ```
+
+  - effect 종류
+  1) NoSchedule : toleration이 맞지 않으면 배치되지 않음.  
+  2) PreferNoSchedule : toleration이 맞지 않으면 배치되지 않으나, 클러스터 리소스가 부족하면 배치됨.  
+  3) NoExecute : toleration이 맞지 않으면 동작중인 파드를 종료시키고 해당 Taint 노드에 스케줄시키지 않음.  
