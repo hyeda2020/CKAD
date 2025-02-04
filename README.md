@@ -35,7 +35,7 @@ metadata:
   labels:
     app: myapp
 spec:
-  containers  # 리스트 형식
+  containers:  # 리스트 형식
   - name: nginx-container
     image: nginx
 ```
@@ -172,7 +172,7 @@ spec:
     labels:
       app: myapp
   spec:
-    containers
+    containers:
     - name: nginx-container
       image: nginx
   envFrom:
@@ -207,7 +207,7 @@ spec:
     labels:
       app: myapp
   spec:
-    containers  # 리스트 형식
+    containers:  # 리스트 형식
     - name: nginx-container
       image: nginx
       resources:
@@ -253,7 +253,7 @@ spec:
     labels:
       app: myapp
   spec:
-    containers 
+    containers: 
     - name: nginx-container
       image: nginx
     tolerations: # tolerations 적용
@@ -267,3 +267,56 @@ spec:
   1) NoSchedule : toleration이 맞지 않으면 배치되지 않음.  
   2) PreferNoSchedule : toleration이 맞지 않으면 배치되지 않으나, 클러스터 리소스가 부족하면 배치됨.  
   3) NoExecute : toleration이 맞지 않으면 동작중인 파드를 종료시키고 해당 Taint 노드에 스케줄시키지 않음.  
+
+- Node Selector & Node Affinity  
+  - Node Selector : 파드가 특정 노드에만 할당되도록 설정  
+  `kubectl label nodes <node-name> color=blue`  
+  ```
+  # pod-definition.yml
+  apiVersion: v1 
+  kind: Pod
+  metadata:
+    name: my-pod
+    labels:
+      app: myapp
+  spec:
+    containers: 
+    - name: nginx-container
+      image: nginx
+    nodeSelector:
+      color: blue # 노드의 레이블을 통해 선택
+  ```
+  => 단, 이러한 Node Selector는 오로지 명시한 레이블이 있는 노드만 선택이 가능하다는 제약이 있으며,  
+     특정 파드가 여러 노드들 중 어느 하나라도 배치될 수 있게끔 하거나,  
+     혹은 특정 노드를 제외하고 다른 노드에는 모두 배치 가능하게끔 하는 등 복잡한 노드 배치 조건으로써는 부족함.  
+    
+  - Node Affinity : `nodeSelector`처럼 노드의 레이블을 기반으로 파드가 스케줄링될 수 있는 노드를 제한할 수 있지만,  
+    `nodeSelector`보다 다양한 제약 조건 사용 가능.  
+  ```
+  # pod-definition.yml
+  apiVersion: v1 
+  kind: Pod
+  metadata:
+    name: my-pod
+    labels:
+      app: myapp
+  spec:
+    containers: 
+    - name: nginx-container
+      image: nginx
+    affinity:  
+      nodeAffinity:  # Node Affinity 적용
+        requiredDuringSchedulingIgnoredDuringExecution:
+          nodeSelectorTerms:
+          - matchExpressions:
+            - key: color
+              operator: In  # NotIn, Exists 조건도 있음.
+              values: # blue 또는 red 중에서는 어느 것에 배치되어도 상관 없음
+              - blue
+              - red
+  ```
+    - Node Affinity 종류  
+    1) `requiredDuringSchedulingIgnoredDuringExecution` : 조건이 만족되지 않으면 스케줄러는 파드를 아예 배치하지 않음.  
+    2) `preferredDuringSchedulingIgnoredDuringExecution` : 스케줄러가 최대한 조건에 맞는 노드를 찾되,  
+       해당되는 노드가 없으면 파드를 아무 노드에 배치해도 됨.  
+    => 단, 두 종류 모두 파드가 이미 실행중인 경우엔 Node Affinity가 중간에 바뀌어도 변화가 적용되지 않음.(`IgnoredDuringExecution`)  
