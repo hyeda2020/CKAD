@@ -270,7 +270,7 @@ spec:
 
 - Node Selector & Node Affinity  
   - Node Selector : 파드가 특정 노드에만 할당되도록 설정  
-  `kubectl label nodes <node-name> color=blue`  
+  `kubectl label nodes <node-name> color=blue # 노드의 레이블 생성`  
   ```
   # pod-definition.yml
   apiVersion: v1 
