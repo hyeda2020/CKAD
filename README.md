@@ -399,5 +399,41 @@ spec:
 - Container Logging : Pod 내의 특정 컨테이너 로그 확인 방법  
 `kubectl logs -f <pod-name> <container-name>`
   
+# 5. Pod Design  
+- Rolling Updates & Rollback : 파드 인스턴스를 점진적으로 새로운/이전 것으로 업데이트하여  
+  Deployment 업데이트가 서비스 중단 없이 이루어질 수 있도록 함.  
 
+  - Rolling Update 방법 1.(yml 파일 수정 후 적용)  
+    ```
+    # deploy-definition.yml
+    apiVersion: apps/v1
+    kind: Deployment
+    metadata:
+      name: nginx-deployment
+      labels:
+        app: nginx
+    spec:
+      replicas: 3
+      selector:
+        matchLabels:
+          app: nginx
+      template:
+        metadata:
+          labels:
+            app: nginx
+        spec:
+          containers:
+          - name: nginx-container
+            image: nginx:1.7.0  # -> nginx:1.7.1 으로 이미지 버전 변경
+    ```
+    `kubectl apply -f deploy-definition.yml # deploy-definition.yml 내용 수정 후 적용`  
 
+  - Rolling Update 방법 2.(set image 명령어 사용)  
+  `kubectl set image deployment/nginx-deployment nginx-container=nginx:1.7.1`
+
+  - Rollback 방법  
+  `kubectl rullout undo deployment/nginx-deployment`  
+    
+  - Rolling Update 상태 조회 방법  
+  `kubectl rollout status deployment/nginx-deployment # 현재 상태 확인`  
+  `kubectl rollout history deployment/nginx-deployment # 과거 이력 확인`  
