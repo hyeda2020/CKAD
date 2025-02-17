@@ -437,3 +437,136 @@ spec:
   - Rolling Update 상태 조회 방법  
   `kubectl rollout status deployment/nginx-deployment # 현재 상태 확인`  
   `kubectl rollout history deployment/nginx-deployment # 과거 이력 확인`  
+
+- Deployment Strategy : Rolling Update는 구버전과 새버전이 공존하는 시간이 발생한다는 단점이 존재하며,  
+  이러한 단점을 극복하기 위한 두 가지 전략 존재.  
+  - Blue Green 배포 : 기존 버전(Blue)과 새 버전(Green)이 병렬로 실행된 다음 새 버전 테스트 후  
+    이슈가 없으면 모든 트래픽을 새 버전으로 이동하는 방식의 배포 전략.  
+    만약 다음과 같은 blue/green deployment와 service가 생성되어 있을 경우,  
+  ```
+  # myapp-blue.yml
+  apiVersion: apps/v1
+  kind: Deployment
+  metadata:
+    name: myapp-blue
+    labels:
+      app: myapp
+      type: front-end
+  spec:
+    template:
+      metadata:
+        name: myapp-pod
+        labels:
+          version: v1
+      spec:
+        containers:
+        - name: app-container
+          image: myapp-image:1.0
+    replicas: 5
+    selector:
+      matchLabels:
+        version: v1
+  ```
+  ```
+  # myapp-green.yml
+  apiVersion: apps/v1
+  kind: Deployment
+  metadata:
+    name: myapp-green
+    labels:
+      app: myapp
+      type: front-end
+  spec:
+    template:
+      metadata:
+        name: myapp-pod
+        labels:
+          version: v2
+      spec:
+        containers:
+        - name: app-container
+          image: myapp-image:2.0
+    replicas: 5
+    selector:
+      matchLabels:
+        version: v2
+  ```
+  ```
+  # serveice-definition.yaml
+  apiVersion: v1
+  kind: Service
+  metadata:
+    name: my-service
+  spec:
+    selector:
+      version: v1  # v2 로 바꿔주면 blue -> green으로 트래픽 전환   
+  ```
+  service에서 seletor를 통해 version 레이블을 v1에서 v2으로 바꿔주면 my-service는 새로 배포된 Pod에만 트래픽을 보내게 됨.  
+  게다가 만약 새로 배포된 버전에 문제가 발생한다면, 다시 my-service의 label을 v1로 돌려줌으로써 쉽게 롤백 가능.  
+    
+  - Canary 배포 : 기존 버전과 새로운 버전을 병렬로 실행하되, 새로운 버전에는 일부의 트래픽만 전달하여  
+    초기 테스트로 일부 사용자에게 점진적으로 롤아웃하고, 새로운 버전에 이슈가 없으면 모든 트래픽을 새 버전으로 전달하는 전략.
+    만약 다음과 같은 old/new deployment와 service가 생성되어 있을 경우,  
+    ```
+    # myapp-old.yml
+    apiVersion: apps/v1
+    kind: Deployment
+    metadata:
+      name: myapp-old
+      labels:
+        app: myapp
+        type: front-end
+    spec:
+      template:
+        metadata:
+          name: myapp-pod
+          labels:
+            version: v1
+            app: front-end
+        spec:
+          containers:
+          - name: app-container
+            image: myapp-image:1.0
+      replicas: 5
+      selector:
+        matchLabels:
+          version: v1
+    ```
+    ```
+    # myapp-new.yml
+    apiVersion: apps/v1
+    kind: Deployment
+    metadata:
+      name: myapp-new
+      labels:
+        app: myapp
+        type: front-end
+    spec:
+      template:
+        metadata:
+          name: myapp-pod
+          labels:
+            version: v2
+            app: front-end
+        spec:
+          containers:
+          - name: app-container
+            image: myapp-image:2.0
+      replicas: 1  # 파드 인스턴스를 하나만 지정하여 새로운 버전은 아주 일부의 트래픽만 수용하도록 설정
+      selector:
+        matchLabels:
+          version: v2
+    ```
+    ```
+    # serveice-definition.yaml
+    apiVersion: v1
+    kind: Service
+    metadata:
+      name: my-service
+    spec:
+      selector:
+        app: front-end # 두 Deployment 모두에 트래픽 전달
+    ```
+    my-service에서 seletor를 통해 app 레이블이 front-end인 기존/신규 버전 모두에 트래픽을 전달하되,  
+    신규 버전의 경우 replicas 사이즈를 1로 지정함으로써 아주 일부의 트래픽만 신규 버전으로 전달되게끔 설정.  
+    이후, 테스트를 통해 새로운 버전에 이슈가 없을 경우 모든 트래픽을 신규 버전으로 전달되게끔 replicas 수정.  
