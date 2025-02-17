@@ -198,41 +198,41 @@ spec:
   ```  
 - Resource Requirements : 파드가 사용하는 노드의 리소스 양을 제약 및 관리.
   - Pod별 리소스 관리  
-  ```
-  # pod-definition.yml
-  apiVersion: v1
-  kind: Pod
-  metadata:
-    name: my-pod
-    labels:
-      app: myapp
-  spec:
-    containers:  # 리스트 형식
-    - name: nginx-container
-      image: nginx
-      resources:
-        requests:
-          memory: "1Gi"
-          cpu: 1
-        limits:
-          memory: "2Gi"
-          cpu: 1
-  ```  
+    ```
+    # pod-definition.yml
+    apiVersion: v1
+    kind: Pod
+    metadata:
+      name: my-pod
+      labels:
+        app: myapp
+    spec:
+      containers:  # 리스트 형식
+      - name: nginx-container
+        image: nginx
+        resources:
+          requests:
+            memory: "1Gi"
+            cpu: 1
+          limits:
+            memory: "2Gi"
+            cpu: 1
+    ```  
   - `Resource Quota`를 사용한 네임스페이스 단위 리소스 관리  
-  ```
-  # resource-quota.yml
-  apiVersion: v1
-  kind: ResourceQuota
-  metadata:
-    name: my-resource-quota
-  spec:
-    hard:
-      requests.cpu: 1
-      requests.memory: 1Gi
-      limits.cpu: 2
-      limits.memory: 2Gi
-      requests.nvidia.com/gpu: 4
-  ```
+    ```
+    # resource-quota.yml
+    apiVersion: v1
+    kind: ResourceQuota
+    metadata:
+      name: my-resource-quota
+    spec:
+      hard:
+        requests.cpu: 1
+        requests.memory: 1Gi
+        limits.cpu: 2
+        limits.memory: 2Gi
+        requests.nvidia.com/gpu: 4
+    ```
 
 - Taints & Tolerations : 워커 노드에 Taint가 설정된 경우, 동일 값의 Toleration이 있는 파드만 해당 워커 노드에 배치 가능.  
   Toleration이 있는 파드는 동일한 Taint가 있는 노드를 포함하여 모든 노드에 배치 가능.  
@@ -240,28 +240,28 @@ spec:
   오직 워커노드에만 배치되고 절대 마스터 노드에는 배치되지 않는데,  
   그 이유는 마스터 노드에는 `node-role.kubernetes.io/master:NoSchedule` 라는 Taint가 설정되어 있기 때문.  
   - Taints 생성 예시  
-  `kubectl taint nodes node1 key1=value1:NoSchedule`  
+    `kubectl taint nodes node1 key1=value1:NoSchedule`  
   - Taints 제거 예시  
-  `kubectl taint nodes node1 key1=value1:NoSchedule-`
+    `kubectl taint nodes node1 key1=value1:NoSchedule-`
   - Tolerations 적용 예시
-  ```
-  # pod-definition.yml
-  apiVersion: v1 
-  kind: Pod
-  metadata:
-    name: my-pod
-    labels:
-      app: myapp
-  spec:
-    containers: 
-    - name: nginx-container
-      image: nginx
-    tolerations: # tolerations 적용
-    - key: "key1"
-      operator: "Equal" # Taint가 '일치'하는 노드에 배치 가능
-      value: "value1"
-      effect: "NoSchedule"
-  ```
+    ```
+    # pod-definition.yml
+    apiVersion: v1 
+    kind: Pod
+    metadata:
+      name: my-pod
+      labels:
+        app: myapp
+    spec:
+      containers: 
+      - name: nginx-container
+        image: nginx
+      tolerations: # tolerations 적용
+      - key: "key1"
+        operator: "Equal" # Taint가 '일치'하는 노드에 배치 가능
+        value: "value1"
+        effect: "NoSchedule"
+    ```
 
   - effect 종류
   1) NoSchedule : toleration이 맞지 않으면 배치되지 않음.  
@@ -271,50 +271,50 @@ spec:
 - Node Selector & Node Affinity  
   - Node Selector : 파드가 특정 노드에만 할당되도록 설정  
   `kubectl label nodes <node-name> color=blue # 노드의 레이블 생성`  
-  ```
-  # pod-definition.yml
-  apiVersion: v1 
-  kind: Pod
-  metadata:
-    name: my-pod
-    labels:
-      app: myapp
-  spec:
-    containers: 
-    - name: nginx-container
-      image: nginx
-    nodeSelector:
-      color: blue # 노드의 레이블을 통해 선택
-  ```
+    ```
+    # pod-definition.yml
+    apiVersion: v1 
+    kind: Pod
+    metadata:
+      name: my-pod
+      labels:
+        app: myapp
+    spec:
+      containers: 
+      - name: nginx-container
+        image: nginx
+      nodeSelector:
+        color: blue # 노드의 레이블을 통해 선택
+    ```
   => 단, 이러한 Node Selector는 오로지 명시한 레이블이 있는 노드만 선택이 가능하다는 제약이 있으며,  
      특정 파드가 여러 노드들 중 어느 하나라도 배치될 수 있게끔 하거나,  
      혹은 특정 노드를 제외하고 다른 노드에는 모두 배치 가능하게끔 하는 등 복잡한 노드 배치 조건으로써는 부족함.  
     
   - Node Affinity : `nodeSelector`처럼 노드의 레이블을 기반으로 파드가 스케줄링될 수 있는 노드를 제한할 수 있지만,  
     `nodeSelector`보다 다양한 제약 조건 사용 가능.  
-  ```
-  # pod-definition.yml
-  apiVersion: v1 
-  kind: Pod
-  metadata:
-    name: my-pod
-    labels:
-      app: myapp
-  spec:
-    containers: 
-    - name: nginx-container
-      image: nginx
-    affinity:  
-      nodeAffinity:  # Node Affinity 적용
-        requiredDuringSchedulingIgnoredDuringExecution:
-          nodeSelectorTerms:
-          - matchExpressions:
-            - key: color
-              operator: In  # NotIn, Exists 조건도 있음.
-              values: # blue 또는 red 중에서는 어느 것에 배치되어도 상관 없음
-              - blue
-              - red
-  ```
+    ```
+    # pod-definition.yml
+    apiVersion: v1 
+    kind: Pod
+    metadata:
+      name: my-pod
+      labels:
+        app: myapp
+    spec:
+      containers: 
+      - name: nginx-container
+        image: nginx
+      affinity:  
+        nodeAffinity:  # Node Affinity 적용
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: color
+                operator: In  # NotIn, Exists 조건도 있음.
+                values: # blue 또는 red 중에서는 어느 것에 배치되어도 상관 없음
+                - blue
+                - red
+    ```
     - Node Affinity 종류  
     1) `requiredDuringSchedulingIgnoredDuringExecution` : 조건이 만족되지 않으면 스케줄러는 파드를 아예 배치하지 않음.  
     2) `preferredDuringSchedulingIgnoredDuringExecution` : 스케줄러가 최대한 조건에 맞는 노드를 찾되,  
@@ -331,22 +331,22 @@ spec:
    - 같은 수명주기 공유
   
 - yml을 활용한 생성
-```
-# pod-definition.yml
-  apiVersion: v1
-  kind: Pod
-  metadata:
-    name: my-pod
-    labels:
-      app: myapp
-  spec:
-    containers: # 멀티 컨테이너
-    - name: nginx-container
-      image: nginx
-
-    - name: log-agent
-      image: log-agent
-```
+  ```
+  # pod-definition.yml
+    apiVersion: v1
+    kind: Pod
+    metadata:
+      name: my-pod
+      labels:
+        app: myapp
+    spec:
+      containers: # 멀티 컨테이너
+      - name: nginx-container
+        image: nginx
+  
+      - name: log-agent
+        image: log-agent
+  ```
   
 - 패턴
   - Sidecar 패턴 : 하나의 주요 애플리케이션이 실행되고, 그 애플리케이션을 보조하는 컨테이너가 함께 실행될 때 사용.   
@@ -443,66 +443,66 @@ spec:
   - Blue Green 배포 : 기존 버전(Blue)과 새 버전(Green)이 병렬로 실행된 다음 새 버전 테스트 후  
     이슈가 없으면 모든 트래픽을 새 버전으로 이동하는 방식의 배포 전략.  
     만약 다음과 같은 blue/green deployment와 service가 생성되어 있을 경우,  
-  ```
-  # myapp-blue.yml
-  apiVersion: apps/v1
-  kind: Deployment
-  metadata:
-    name: myapp-blue
-    labels:
-      app: myapp
-      type: front-end
-  spec:
-    template:
-      metadata:
-        name: myapp-pod
-        labels:
+    ```
+    # myapp-blue.yml
+    apiVersion: apps/v1
+    kind: Deployment
+    metadata:
+      name: myapp-blue
+      labels:
+        app: myapp
+        type: front-end
+    spec:
+      template:
+        metadata:
+          name: myapp-pod
+          labels:
+            version: v1
+        spec:
+          containers:
+          - name: app-container
+            image: myapp-image:1.0
+      replicas: 5
+      selector:
+        matchLabels:
           version: v1
-      spec:
-        containers:
-        - name: app-container
-          image: myapp-image:1.0
-    replicas: 5
-    selector:
-      matchLabels:
-        version: v1
-  ```
-  ```
-  # myapp-green.yml
-  apiVersion: apps/v1
-  kind: Deployment
-  metadata:
-    name: myapp-green
-    labels:
-      app: myapp
-      type: front-end
-  spec:
-    template:
-      metadata:
-        name: myapp-pod
-        labels:
+    ```
+    ```
+    # myapp-green.yml
+    apiVersion: apps/v1
+    kind: Deployment
+    metadata:
+      name: myapp-green
+      labels:
+        app: myapp
+        type: front-end
+    spec:
+      template:
+        metadata:
+          name: myapp-pod
+          labels:
+            version: v2
+        spec:
+          containers:
+          - name: app-container
+            image: myapp-image:2.0
+      replicas: 5
+      selector:
+        matchLabels:
           version: v2
-      spec:
-        containers:
-        - name: app-container
-          image: myapp-image:2.0
-    replicas: 5
-    selector:
-      matchLabels:
-        version: v2
-  ```
-  ```
-  # serveice-definition.yaml
-  apiVersion: v1
-  kind: Service
-  metadata:
-    name: my-service
-  spec:
-    selector:
-      version: v1  # v2 로 바꿔주면 blue -> green으로 트래픽 전환   
-  ```
-  service에서 seletor를 통해 version 레이블을 v1에서 v2으로 바꿔주면 my-service는 새로 배포된 Pod에만 트래픽을 보내게 됨.  
-  게다가 만약 새로 배포된 버전에 문제가 발생한다면, 다시 my-service의 label을 v1로 돌려줌으로써 쉽게 롤백 가능.  
+    ```
+    ```
+    # serveice-definition.yaml
+    apiVersion: v1
+    kind: Service
+    metadata:
+      name: my-service
+    spec:
+      selector:
+        version: v1  # v2 로 바꿔주면 blue -> green으로 트래픽 전환   
+    ```
+    service에서 seletor를 통해 version 레이블을 v1에서 v2으로 바꿔주면 my-service는 새로 배포된 Pod에만 트래픽을 보내게 됨.  
+    게다가 만약 새로 배포된 버전에 문제가 발생한다면, 다시 my-service의 label을 v1로 돌려줌으로써 쉽게 롤백 가능.  
     
   - Canary 배포 : 기존 버전과 새로운 버전을 병렬로 실행하되, 새로운 버전에는 일부의 트래픽만 전달하여  
     초기 테스트로 일부 사용자에게 점진적으로 롤아웃하고, 새로운 버전에 이슈가 없으면 모든 트래픽을 새 버전으로 전달하는 전략.
