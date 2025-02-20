@@ -570,3 +570,50 @@ spec:
     my-service에서 seletor를 통해 app 레이블이 front-end인 기존/신규 버전 모두에 트래픽을 전달하되,  
     신규 버전의 경우 replicas 사이즈를 1로 지정함으로써 아주 일부의 트래픽만 신규 버전으로 전달되게끔 설정.  
     이후, 테스트를 통해 새로운 버전에 이슈가 없을 경우 모든 트래픽을 신규 버전으로 전달되게끔 replicas 수정.  
+
+- Job & CronJobs  
+  - Job : 쿠버네티스에서는 일반적으로 파드 내 컨테이너가 종료되면 항상 재기동하여 Running 상태를 유지하는데,  
+    Batch 작업이나 리포팅같은 경우엔 해당 작업이 완료되면 종료된 상태로 있어야 하는 경우가 많음.  
+    이런 경우에 대해 쿠버네티스에서 제공하는 Job은 작업이 완료되는 실행이 중지되는 일회성 작업.
+    ```
+    # job-definition.yml
+    apiVersion: batch/v1
+    kind: Job
+    metadata:
+      name: math-add-job
+    spec:
+      completions: 3  # 해당 Job을 순차적으로 3번 실행
+      parallelism: 2  # 해당 Job을 동시에 최대 2개 실행
+      # 즉, 위 조건상으로는 job1, job2는 동시 실행, 그 후 두 잡이 완료되면 job3 실행
+      template:
+        spec:
+          containers:
+          - name: math-add
+            image: perl:5.34.0
+            command: ['expr',  '3', '+', '2']
+          restartPolicy: Never  # 파드가 정상 종료되면 절대 재기동하지 않음.(필수 지정)
+      backoffLimit: 4  # 중간에 실패할 경우 최대 몇 번 재기동 시도할 것인지.
+    ```
+      
+  - CronJob : Job에 크론 스케줄 기능 추가.  
+    ```
+    # cron-job-definition.yml
+    apiVersion: batch/v1
+    kind: CronJob
+    metadata:
+      name: daily-add-job
+    spec:
+      schedule: "0 9 * * *"
+      jobTemplate:  # Job의 spec 내용을 명시
+        spec:
+          completions: 3 
+          parallelism: 2  
+          template:
+            spec:
+              containers:
+              - name: math-add
+                image: perl:5.34.0
+                command: ['expr',  '3', '+', '2']
+              restartPolicy: Never  
+          backoffLimit: 4 
+    ```
