@@ -638,7 +638,7 @@ spec:
           app: myapp
           type: back-end
       ```  
-    - NodePort : ClusterIP를 Wrapping하여 파드 그룹의 포트를 노드 포트와 매핑함으로써 클러스터 외부로 노출시킴.  
+    - NodePort : 파드 그룹의 포트를 노드 포트와 매핑함으로써 애플리케이션을 클러스터 외부로 노출시킴.  
       ![nodeport](https://github.com/user-attachments/assets/bed2e050-f4ff-4285-9b5e-c42e32beed24)
       - NodePort 타입 서비스 생성 예시
       ```
@@ -649,6 +649,7 @@ spec:
         name: nodeport-service
       spec:
         type: NodePort
+        clusterIP: 10.100.100.200 # ClusterIP를 Wrapping하여 노드포드 생성 
         selector:
           app: myapp
           type: front-end
