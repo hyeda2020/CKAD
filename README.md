@@ -624,7 +624,7 @@ spec:
       - ClusterIP 타입 서비스 생성 예시
       ![clusterip](https://github.com/user-attachments/assets/8c8551b3-9237-460b-bff2-48abc0ff7fcb)
       ```
-       # clusterip-service-def.yaml
+      # clusterip-service-def.yaml
       apiVersion: v1
       kind: Service
       metadata:
