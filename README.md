@@ -659,12 +659,39 @@ spec:
         nodePort: 30008 # 기본값: 30000-32767
     ```  
 - Ingress : 클러스터 외부의 트래픽을 클러스터 내부의 서비스로 라우팅하는 방법을 제공하는 리소스로,  
-  Ingress를 사용하면 도메인 이름 기반의 HTTP 및 HTTPS 라우팅을 설정하여, 외부에서 들어오는 요청을 특정 서비스로 유도할 수 있음.  
-  <img width="640" alt="ingress" src="https://github.com/user-attachments/assets/36ae1dbb-e07e-4bc1-bb6d-91202a6e60f6" />  
+  Ingress를 사용하면 도메인 이름 기반의 HTTP 및 HTTPS 라우팅을 설정하여, 외부에서 들어오는 요청을 URL 경로에 따라 특정 서비스로 유도할 수 있음.  
+    
   ※ Ingress의 기능  
     1) Service에 외부 URL을 제공  
     2) 트래픽을 로드밸런싱  
     3) SSL인증서 처리  
-    4) 도메인 기반 가상 호스팅 제공  
-  - Ingress Controller  
-  - Ingress Rule  
+    4) 도메인 기반 가상 호스팅 제공
+    
+  ![Ingress](https://github.com/user-attachments/assets/96d19f83-7965-464e-b04b-32f905582648)  
+  - `Ingress Controller` : 클러스터에서 `Ingress`가 작동하려면 반드시 하나 이상의 `Ingress Controller`가 실행되고 있어야 함.  
+    `Ingress Controller`는 일종의 `Ingress`의 구현체로, `Ingress`가 작동하는 방식은 어느 `Ingress Controller`를 사용하는지에 따라 다름.  
+    `Ingress Controller` 솔루션에는 NginX, traefik, Istio 등이 있으며, `Ingress`를 구성하려면 반드시 사전에 `Ingress Controller` 솔루션 이미지를 Deployment로 배포해야 함.  
+    ```  
+    # Nginx 컨트롤러 설치
+    kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.0.0/deploy/static/provider/baremetal/deploy.yaml
+    ```
+    
+  - Ingress Resource : 트래픽을 어떤 방식으로 URL 경로에 따라 라우팅 할 것인지 규칙(Rule)을 명시.  
+    ```
+    apiVersion: networking.k8s.io/v1
+    kind: Ingress
+    metadata:
+      name: ingress-login-order
+    spec:
+      paths:
+      - path: /login
+        pathType: Prefix
+        backend:
+          serviceName: login-service
+          servicePort: 80
+      - path: /order
+        pathType: Prefix
+        backend:
+          serviceName: order-service
+          servicePort: 80
+    ``` 
