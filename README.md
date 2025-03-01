@@ -619,42 +619,52 @@ spec:
     ```
 
 # 6. Services & Networking
-  - Service : 특정 파드 그룹을 묶어서 연결하는 단일진입점을 구성하고(ClusterIP), 이를 외부로 노출시켜(NodePort) 로드밸런싱하는 기능 제공.  
-    - ClusterIP : 특정 파드 그룹을 묶어서 연결하는 단일진입점을 구성하며, 클러스터 내부에서만 접근 가능한 IP. (서비스의 default 타입)
-      - ClusterIP 타입 서비스 생성 예시
-      ![clusterip](https://github.com/user-attachments/assets/8c8551b3-9237-460b-bff2-48abc0ff7fcb)
-      ```
-      # clusterip-service-def.yaml
-      apiVersion: v1
-      kind: Service
-      metadata:
-        name: clusterip-service
-      spec:
-        type: ClusterIP
+- Service : 특정 파드 그룹을 묶어서 연결하는 단일진입점을 구성하고(ClusterIP), 이를 외부로 노출시켜(NodePort) 로드밸런싱하는 기능 제공.  
+  - ClusterIP : 특정 파드 그룹을 묶어서 연결하는 단일진입점을 구성하며, 클러스터 내부에서만 접근 가능한 IP. (서비스의 default 타입)
+    - ClusterIP 타입 서비스 생성 예시
+    ![clusterip](https://github.com/user-attachments/assets/8c8551b3-9237-460b-bff2-48abc0ff7fcb)
+    ```
+    # clusterip-service-def.yaml
+    apiVersion: v1
+    kind: Service
+    metadata:
+      name: clusterip-service
+    spec:
+      type: ClusterIP
+    ports:
+    - targetPort: 80
+      port: 80
+      selector:
+        app: myapp
+        type: back-end
+    ```  
+  - NodePort : 파드 그룹의 포트를 노드 포트와 매핑함으로써 애플리케이션을 클러스터 외부로 노출시킴.  
+    ![nodeport](https://github.com/user-attachments/assets/bed2e050-f4ff-4285-9b5e-c42e32beed24)
+    - NodePort 타입 서비스 생성 예시
+    ```
+    # nodeport-service-def.yaml
+    apiVersion: v1
+    kind: Service
+    metadata:
+      name: nodeport-service
+    spec:
+      type: NodePort
+      clusterIP: 10.100.100.200 # ClusterIP를 Wrapping하여 노드포드 생성 
+      selector:
+        app: myapp
+        type: front-end
       ports:
-      - targetPort: 80
-        port: 80
-        selector:
-          app: myapp
-          type: back-end
-      ```  
-    - NodePort : 파드 그룹의 포트를 노드 포트와 매핑함으로써 애플리케이션을 클러스터 외부로 노출시킴.  
-      ![nodeport](https://github.com/user-attachments/assets/bed2e050-f4ff-4285-9b5e-c42e32beed24)
-      - NodePort 타입 서비스 생성 예시
-      ```
-      # nodeport-service-def.yaml
-      apiVersion: v1
-      kind: Service
-      metadata:
-        name: nodeport-service
-      spec:
-        type: NodePort
-        clusterIP: 10.100.100.200 # ClusterIP를 Wrapping하여 노드포드 생성 
-        selector:
-          app: myapp
-          type: front-end
-        ports:
-        - port: 80  # 기본적으로 그리고 편의상 `targetPort`는 `port` 필드와 동일한 값으로 설정된다.
-          targetPort: 80
-          nodePort: 30008 # 기본값: 30000-32767
-      ```  
+      - port: 80  # 기본적으로 그리고 편의상 `targetPort`는 `port` 필드와 동일한 값으로 설정된다.
+        targetPort: 80
+        nodePort: 30008 # 기본값: 30000-32767
+    ```  
+- Ingress : 클러스터 외부의 트래픽을 클러스터 내부의 서비스로 라우팅하는 방법을 제공하는 리소스로,  
+  Ingress를 사용하면 도메인 이름 기반의 HTTP 및 HTTPS 라우팅을 설정하여, 외부에서 들어오는 요청을 특정 서비스로 유도할 수 있음.  
+  <img width="640" alt="ingress" src="https://github.com/user-attachments/assets/36ae1dbb-e07e-4bc1-bb6d-91202a6e60f6" />  
+  ※ Ingress의 기능  
+    1) Service에 외부 URL을 제공  
+    2) 트래픽을 로드밸런싱  
+    3) SSL인증서 처리  
+    4) 도메인 기반 가상 호스팅 제공  
+  - Ingress Controller  
+  - Ingress Rule  
