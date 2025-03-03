@@ -706,6 +706,7 @@ spec:
   - Egress : 해당 파드에서 다른 곳으로 나가는 트래픽(out)
   
   ```
+  # db-network-policy.yml
   apiVersion: networking.k8s.io/v1
   kind: NetworkPolicy
   metadata:
@@ -713,7 +714,7 @@ spec:
   spec:
     podSelector:
       matchLabels:
-        role: db
+        role: db  # DB에 대한 네트워크 정책 설정
     policyTypes:
       - Ingress
       - Egress
