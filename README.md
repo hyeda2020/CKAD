@@ -672,7 +672,7 @@ spec:
     `Ingress Controller`는 일종의 `Ingress`의 구현체로, `Ingress`가 작동하는 방식은 어느 `Ingress Controller`를 사용하는지에 따라 다름.  
     `Ingress Controller` 솔루션에는 NginX, traefik, Istio 등이 있으며, `Ingress`를 구성하려면 반드시 사전에 `Ingress Controller` 솔루션 이미지를 Deployment로 배포해야 함.  
     ```  
-    # Nginx 컨트롤러 설치
+    # Nginx 컨트롤러 설치  
     kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.0.0/deploy/static/provider/baremetal/deploy.yaml
     ```
     
@@ -694,4 +694,48 @@ spec:
         backend:
           serviceName: order-service
           servicePort: 80
-    ``` 
+    ```  
+- Network Policy : 파드가 네트워크상의 다양한 엔티티(파드, 네임스페이스, Ip블록)와 통신할 수 있도록 허용하는 방법 지정.  
+  - 파드가 통신할 수 있는 엔티티는 아래와 같이 3개의 조합으로 식별.  
+    1) 허용되는 다른 파드(Selector를 통해 지정)  
+    2) 허용되는 네임스페이스(Selector를 통해 지정)  
+    3) IP 블록(CIDR 범위)  
+
+  ※ 파드에 대한 네트워크 허용 방법의 두 가지 종류  
+  - Ingress : 해당 파드로 진입하는 트래픽(in)  
+  - Egress : 해당 파드에서 다른 곳으로 나가는 트래픽(out)
+  
+  ```
+  apiVersion: networking.k8s.io/v1
+  kind: NetworkPolicy
+  metadata:
+    name: network-policy
+  spec:
+    podSelector:
+      matchLabels:
+        role: db
+    policyTypes:
+      - Ingress
+      - Egress
+    ingress:  # 아래 조건들에 대해서만 ingress 트래픽 허용
+      - from:    # ipBlock과 (namespacaceSelector & podSelector)는 OR 조건
+          - ipBlock:            
+              cidr: 172.17.0.0/16  
+          - namespaceSelector:  # namespacaceSelector 와 podSelector는 AND 조건(같은 - 하위에 있으면 AND 조건)
+              matchLabels:
+                project: myproject
+            podSelector:
+              matchLabels:
+                role: frontend
+        ports:
+          - protocol: TCP
+            port: 6379
+    egress:   # 아래 조건들에 대해서만 Egress 트래픽 허용
+      - to:
+          - ipBlock:
+              cidr: 10.0.0.0/24
+        ports:
+          - protocol: TCP
+            port: 5978
+  ```
+  
