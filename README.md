@@ -717,7 +717,7 @@ spec:
     policyTypes:
       - Ingress
       - Egress
-    ingress:  # 아래 조건들에 대해서만 ingress 트래픽 허용
+    ingress:  # 아래 대상들에 대해서만 DB에 대한 Ingress 트래픽 허용
       - from:    # ipBlock과 (namespacaceSelector & podSelector)는 OR 조건
           - ipBlock:            
               cidr: 172.17.0.0/16  
@@ -730,7 +730,7 @@ spec:
         ports:
           - protocol: TCP
             port: 6379
-    egress:   # 아래 조건들에 대해서만 Egress 트래픽 허용
+    egress:   # 아래 대상들에 대해서만 DB로부터의 Egress 트래픽 허용
       - to:
           - ipBlock:
               cidr: 10.0.0.0/24
