@@ -1,0 +1,7 @@
+# Docker Command
+- docker build -t 이미지명:태그명 >> 도커 이미지 빌드  
+- docker save -o /경로/파일명.tar 이미지명:태그명 >> 이미지를 tar로 묶음
+- docker load -l /경로/파일명.tar >> tar 파일로 불러옴
+- docker run --name 서비스명 -d 이미지명:태그명
+- docker export -o /경로/파일명.tar 이미지명:태그명
+- docker import /경로/파일명.tar 이미지명:태그명
